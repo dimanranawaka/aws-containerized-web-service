@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crypto-app-deployment-green
+  labels:
+    app: crypto-app-green
+spec:
+  replicas: 2  # Number of app instances (replicas)
+  selector:
+    matchLabels:
+      app: crypto-app-green
+  template:
+    metadata:
+      labels:
+        app: crypto-app-green
+    spec:
+      containers:
+        - name: crypto-app
+          image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest  # Updated with your ECR image
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crypto-app-service-green
+spec:
+  type: LoadBalancer  # This makes your app accessible from outside the cluster
+  selector:
+    app: crypto-app-green
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
