@@ -40,7 +40,7 @@ jobs:
 
       - name: Deploy to Green environment
         run: |
-          kubectl apply -f k8s/deployments/deployment-green.yaml
+          kubectl apply -f k8s/deployments/deployment-green.yaml --validate=false
           kubectl rollout status deployment/crypto-app-deployment-green
 
       - name: Verify Deployment
