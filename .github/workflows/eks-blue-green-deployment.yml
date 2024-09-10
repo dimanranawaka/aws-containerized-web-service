@@ -1,0 +1,48 @@
+name: EKS Blue-Green Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push the Docker image
+        run: |
+          docker build -t crypto-price:latest .
+          docker tag crypto-price:latest 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest
+          docker push 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest
+
+      - name: Deploy to Green environment
+        run: |
+          kubectl apply -f deployment-green.yaml  # Deploy to green environment
+          kubectl rollout status deployment/crypto-app-deployment-green
+
+      - name: Update Service to Green (Shift Traffic)
+        run: |
+          kubectl patch service crypto-app-service -p '{"spec": {"selector": {"app": "crypto-app-green"}}}'  # Point service to green
+
+      - name: Verify Deployment
+        run: |
+          kubectl get pods
+          kubectl get services
