@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: crypto-app
-          image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest  # Updated with your ECR image
+          image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest  # Updated with our ECR image
           ports:
             - containerPort: 5000
 ---
@@ -25,7 +25,7 @@ kind: Service
 metadata:
   name: crypto-app-service-green
 spec:
-  type: LoadBalancer  # This makes your app accessible from outside the cluster
+  type: LoadBalancer  # This makes our app accessible from outside the cluster
   selector:
     app: crypto-app-green
   ports:

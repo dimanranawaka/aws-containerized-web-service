@@ -3,7 +3,7 @@ name: EKS Blue-Green Deployment
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   deploy:
@@ -33,14 +33,15 @@ jobs:
           docker tag crypto-price:latest 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest
           docker push 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest
 
+      - name: Deploy to Blue environment
+        run: |
+          kubectl apply -f k8s/deployments/deployment-blue.yaml
+          kubectl rollout status deployment/crypto-app-deployment-blue
+
       - name: Deploy to Green environment
         run: |
-          kubectl apply -f deployment-green.yaml  # Deploy to green environment
+          kubectl apply -f k8s/deployments/deployment-green.yaml
           kubectl rollout status deployment/crypto-app-deployment-green
-
-      - name: Update Service to Green (Shift Traffic)
-        run: |
-          kubectl patch service crypto-app-service -p '{"spec": {"selector": {"app": "crypto-app-green"}}}'  # Point service to green
 
       - name: Verify Deployment
         run: |
