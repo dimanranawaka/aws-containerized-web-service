@@ -20,6 +20,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-north-1  # Region where our EKS and ECR resources are located
 
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          sudo mv ./kubectl /usr/local/bin/kubectl
+
+      - name: Update kubeconfig to use the EKS cluster
+        run: |
+          aws eks update-kubeconfig --region eu-north-1 --name crypto-app-cluster  # Replace with our actual cluster name
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
