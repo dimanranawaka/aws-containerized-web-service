@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: crypto-app-deployment-blue
+  namespace: blue  # Specifies the namespace for blue environment
   labels:
     app: crypto-app-blue
 spec:
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
         - name: crypto-app
-          image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest  # Updated with our ECR image
+          image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest  # ECR image for the app
           ports:
             - containerPort: 5000
 ---
@@ -24,8 +25,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: crypto-app-service-blue
+  namespace: blue  # Specifies the namespace for blue environment
 spec:
-  type: LoadBalancer  # This makes our app accessible from outside the cluster
+  type: LoadBalancer  # This makes the app accessible from outside the cluster
   selector:
     app: crypto-app-blue
   ports:
