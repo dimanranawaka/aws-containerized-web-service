@@ -41,7 +41,7 @@ jobs:
       - name: Update the Green environment
         run: |
           kubectl apply -f k8s/deployments/deployment-green.yaml   # Apply the green environment deployment
-          kubectl rollout status deployment/crypto-app-deployment-green -n green  # Wait for the green deployment to complete
+          kubectl rollou status deployment/crypto-app-deployment-green -n green  # Wait for the green deployment to complete
 
       - name: Verify Deployment
         run: |
