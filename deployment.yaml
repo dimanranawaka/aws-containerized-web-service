@@ -2,10 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: crypto-app-deployment
+  namespace: blue  # Specify the namespace (blue or green)
   labels:
     app: crypto-app
 spec:
-  replicas: 2  # Number of app instances (replicas)
+  replicas: 3  # Number of app instances (3 replicas)
   selector:
     matchLabels:
       app: crypto-app
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
         - name: crypto-app
-          image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest  # Updated with your ECR image
+          image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest  # ECR image
           ports:
             - containerPort: 5000
 ---
@@ -24,8 +25,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: crypto-app-service
+  namespace: blue  # Specify the namespace (blue or green)
 spec:
-  type: LoadBalancer  # This makes your app accessible from outside the cluster
+  type: LoadBalancer  # Accessible from outside the cluster
   selector:
     app: crypto-app
   ports:

@@ -3,7 +3,7 @@ name: EKS Blue-Green Deployment
 on:
   push:
     branches:
-      - master
+      - master  # Triggers deployment on push to the master branch
 
 jobs:
   deploy:
@@ -16,9 +16,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Secrets stored in GitHub
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1
+          aws-region: eu-north-1  # Region where our EKS and ECR resources are located
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -27,23 +27,25 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push the Docker image
+      - name: Build, tag, and push the Docker image to ECR
         run: |
-          docker build -t crypto-price:latest .
+          docker build -t crypto-price:latest .  # Build the Docker image
           docker tag crypto-price:latest 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest
           docker push 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:latest
 
-      - name: Deploy to Blue environment
+      - name: Update the Blue environment
         run: |
-          kubectl apply -f k8s/deployments/deployment-blue.yaml
-          kubectl rollout status deployment/crypto-app-deployment-blue
+          kubectl apply -f k8s/deployments/deployment-blue.yaml  # Apply the blue environment deployment
+          kubectl rollout status deployment/crypto-app-deployment-blue -n blue  # Wait for the blue deployment to complete
 
-      - name: Deploy to Green environment
+      - name: Update the Green environment
         run: |
-          kubectl apply -f k8s/deployments/deployment-green.yaml --validate=false
-          kubectl rollout status deployment/crypto-app-deployment-green
+          kubectl apply -f k8s/deployments/deployment-green.yaml --validate=false  # Apply the green environment deployment
+          kubectl rollout status deployment/crypto-app-deployment-green -n green  # Wait for the green deployment to complete
 
       - name: Verify Deployment
         run: |
-          kubectl get pods
-          kubectl get services
+          kubectl get pods -n blue  # List pods in the blue namespace
+          kubectl get pods -n green  # List pods in the green namespace
+          kubectl get services -n blue  # List services in the blue namespace
+          kubectl get services -n green  # List services in the green namespace
