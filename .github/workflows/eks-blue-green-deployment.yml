@@ -1,72 +1,86 @@
-name: EKS Blue-Green Deployment
+name: EKS Blue-Green Deployment # The name of this GitHub Actions workflow
 
 on:
   push:
     branches:
-      - master
+      - master # This workflow is triggered when changes are pushed to the master branch
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # The job will run on the latest Ubuntu version available
 
     steps:
+      # Step 1: Check out the latest code from the repository
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3 # Uses the official GitHub checkout action to clone the repo's code
 
+      # Step 2: Configure AWS credentials for accessing ECR and EKS
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v2 # Uses AWS GitHub action to configure AWS CLI
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} # AWS access key stored in GitHub Secrets
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # AWS secret access key from GitHub Secrets
+          aws-region: eu-north-1 # Specify the AWS region where ECR and EKS resources are located
 
+      # Step 3: Install kubectl, the Kubernetes command-line tool
       - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x ./kubectl
-          sudo mv ./kubectl /usr/local/bin/kubectl
+          sudo mv ./kubectl /usr/local/bin/kubectl  # Download, make executable, and move kubectl to system's binary folder
 
+      # Step 4: Update the kubeconfig to use the correct EKS cluster
       - name: Update kubeconfig to use the EKS cluster
         run: |
-          aws eks update-kubeconfig --region eu-north-1 --name crypto-app
+          aws eks update-kubeconfig --region eu-north-1 --name crypto-app  # Update kubeconfig to interact with the specified EKS cluster
 
+      # Step 5: Set up Docker Buildx to enable advanced build capabilities
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v2 # Use Docker Buildx to build multi-platform images
 
+      # Step 6: Log in to Amazon ECR to allow pushing Docker images
       - name: Log in to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2 # Use the ECR login action to authenticate Docker with Amazon ECR
 
+      # Step 7: Build, tag, and push the Docker image to ECR
       - name: Build, tag, and push the Docker image to ECR
         run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-          docker build -t crypto-price:${IMAGE_TAG} .
-          docker tag crypto-price:${IMAGE_TAG} 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:${IMAGE_TAG}
-          docker push 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:${IMAGE_TAG}
+          IMAGE_TAG=$(git rev-parse --short HEAD)  # Get the short Git commit SHA as the image tag
+          docker build -t crypto-price:${IMAGE_TAG} .  # Build the Docker image and tag it with the Git commit SHA
+          docker tag crypto-price:${IMAGE_TAG} 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:${IMAGE_TAG}  # Tag the image with the ECR repository URL
+          docker push 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:${IMAGE_TAG}  # Push the image to Amazon ECR
 
+      # Step 8: Update the Docker image tag in the Blue environment's deployment manifest
       - name: Update Blue deployment image
         run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-          sed -i "s|image: .*/crypto-price:.*|image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:${IMAGE_TAG}|g" k8s/deployments/deployment-blue.yaml
+          IMAGE_TAG=$(git rev-parse --short HEAD)  # Get the short Git commit SHA as the image tag
+          sed -i "s|image: .*/crypto-price:.*|image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:${IMAGE_TAG}|g" k8s/deployments/deployment-blue.yaml  
+          # Use sed to dynamically replace the image tag in the blue deployment YAML file with the new tag
 
+      # Step 9: Update the Docker image tag in the Green environment's deployment manifest
       - name: Update Green deployment image
         run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-          sed -i "s|image: .*/crypto-price:.*|image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:${IMAGE_TAG}|g" k8s/deployments/deployment-green.yaml
+          IMAGE_TAG=$(git rev-parse --short HEAD)  # Get the short Git commit SHA as the image tag
+          sed -i "s|image: .*/crypto-price:.*|image: 654654534276.dkr.ecr.eu-north-1.amazonaws.com/crypto-price:${IMAGE_TAG}|g" k8s/deployments/deployment-green.yaml  
+          # Use sed to dynamically replace the image tag in the green deployment YAML file with the new tag
 
+      # Step 10: Apply the updated Blue environment deployment to the Kubernetes cluster
       - name: Update the Blue environment
         run: |
-          kubectl apply -f k8s/deployments/deployment-blue.yaml
-          kubectl rollout status deployment/crypto-app-deployment-blue -n blue
+          kubectl apply -f k8s/deployments/deployment-blue.yaml  # Apply the changes to the Blue deployment YAML file in Kubernetes
+          kubectl rollout status deployment/crypto-app-deployment-blue -n blue  # Check the rollout status of the Blue environment in Kubernetes
 
+      # Step 11: Apply the updated Green environment deployment to the Kubernetes cluster
       - name: Update the Green environment
         run: |
-          kubectl apply -f k8s/deployments/deployment-green.yaml
-          kubectl rollout status deployment/crypto-app-deployment-green -n green
+          kubectl apply -f k8s/deployments/deployment-green.yaml  # Apply the changes to the Green deployment YAML file in Kubernetes
+          kubectl rollout status deployment/crypto-app-deployment-green -n green  # Check the rollout status of the Green environment in Kubernetes
 
+      # Step 12: Verify that the Blue and Green environments have been successfully deployed
       - name: Verify Deployment
         run: |
-          kubectl get pods -n blue
-          kubectl get pods -n green
-          kubectl get services -n blue
-          kubectl get services -n green
+          kubectl get pods -n blue  # List all pods running in the Blue environment namespace
+          kubectl get pods -n green  # List all pods running in the Green environment namespace
+          kubectl get services -n blue  # List all services running in the Blue environment namespace
+          kubectl get services -n green  # List all services running in the Green environment namespace
