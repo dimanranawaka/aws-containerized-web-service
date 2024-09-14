@@ -5,13 +5,13 @@ const path = require('path');  // <-- Import path module to serve static files
 
 const app = express();
 
-const corsOptions = {
-    origin: ['http://a75311aa5cce641c2bd0dc31f0b77c63-865131364.eu-north-1.elb.amazonaws.com'],
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-};
-app.use(cors(corsOptions));
+// const corsOptions = {
+//     origin: ['http://a75311aa5cce641c2bd0dc31f0b77c63-865131364.eu-north-1.elb.amazonaws.com'],
+//     methods: ['GET', 'POST'],
+//     allowedHeaders: ['Content-Type', 'Authorization'],
+//     credentials: true
+// };
+// app.use(cors(corsOptions));
 
 // Serve static files from the 'public' directory (for frontend)
 app.use(express.static(path.join(__dirname, 'public')));
